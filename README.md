@@ -17,7 +17,7 @@ Portalview helps you organize and connect to remote desktops from [Omarchy](http
 Download the package matching your architecture from [Releases](https://github.com/seth-reee/Portalview/releases): `x86_64` for standard Omarchy PCs or `aarch64` for ARM64.
 
 ```bash
-sudo pacman -U ./portalview-0.1.0-1-x86_64.pkg.tar.zst
+sudo pacman -U ./portalview-0.1.1-1-x86_64.pkg.tar.zst
 ```
 
 For ARM64, use the `aarch64` filename instead. Pacman installs required dependencies, including `freerdp`; FreeRDP is not bundled. Install `qt6-wayland` for native Wayland support if it is not already installed.
