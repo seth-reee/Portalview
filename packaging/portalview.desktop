@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Portalview
+Comment=Connect to remote Windows desktops
+Exec=portalview
+Icon=portalview
+Terminal=false
+Categories=Network;RemoteAccess;
+StartupWMClass=Portalview

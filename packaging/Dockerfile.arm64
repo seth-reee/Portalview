@@ -1,0 +1,4 @@
+FROM omarchy-qt-arm64:latest
+
+# Reuse the repaired Arch ARM builder described in ../AGENTS.md.
+RUN ["/usr/bin/pacman", "-Syu", "--noconfirm", "--needed", "qt6-declarative", "qt6-wayland", "freerdp"]
