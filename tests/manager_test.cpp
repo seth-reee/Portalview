@@ -26,7 +26,7 @@ private slots:
         QVERIFY(QDir().mkpath(root + "/bin"));
         QFile fake(root + "/bin/sdl-freerdp3");
         QVERIFY(fake.open(QIODevice::WriteOnly));
-        fake.write("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$PORTALVIEW_TEST_ROOT/argv\"\ncat > \"$PORTALVIEW_TEST_ROOT/input\"\nsleep 1\n");
+        fake.write("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$PORTALVIEW_TEST_ROOT/argv\"\nprintf '%s\\n' \"$SDL_APP_ID\" > \"$PORTALVIEW_TEST_ROOT/app-id\"\ncat > \"$PORTALVIEW_TEST_ROOT/input\"\nsleep 1\n");
         fake.close();
         QVERIFY(fake.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner));
         qputenv("PORTALVIEW_TEST_ROOT", root.toUtf8());
@@ -43,6 +43,9 @@ private slots:
         auto bytes = input.readAll();
         QVERIFY(bytes.contains("/p:secret-test-value\n"));
         QVERIFY(bytes.contains("/v:[::1]:3389\n"));
+        QVERIFY(bytes.contains("/wm-class:portalview\n"));
+        QFile appId(root + "/app-id"); QVERIFY(appId.open(QIODevice::ReadOnly));
+        QCOMPARE(appId.readAll(), QByteArray("portalview\n"));
         QVERIFY(!bytes.contains("/network:modem\n"));
         entry["host"] = "::1";
         entry["performanceMode"] = true;

@@ -9,6 +9,7 @@
 #include <QUuid>
 #include <QRegularExpression>
 #include <QTimer>
+#include <QProcessEnvironment>
 Manager::Manager(QObject *parent) : QObject(parent) {
     m_path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/connections.json";
     QFile file(m_path);
@@ -88,7 +89,7 @@ void Manager::connectTo(QString id, QString password) {
     QString host = entry["host"].toString();
     if (host.contains(':') && !host.startsWith('[')) host = "[" + host + "]";
     QStringList args {"/v:" + host + ":" + entry["port"].toString(), "/u:" + entry["username"].toString(), "/p:" + password,
-        "/t:Portalview — " + entry["name"].toString(), "+dynamic-resolution", "/size:1280x800", "/timeout:10000", "/log-level:ERROR",
+        "/t:Portalview — " + entry["name"].toString(), "/wm-class:portalview", "+dynamic-resolution", "/size:1280x800", "/timeout:10000", "/log-level:ERROR",
         entry["clipboard"].toBool() ? "+clipboard" : "-clipboard", entry["trustFirst"].toBool() ? "/cert:tofu" : "/cert:deny"};
     if (!entry["domain"].toString().isEmpty()) args << "/d:" + entry["domain"].toString();
     if (entry["fullscreen"].toBool()) args << "/f";
@@ -96,6 +97,9 @@ void Manager::connectTo(QString id, QString password) {
         args << "/network:modem" << "/bpp:16" << "-wallpaper" << "-themes"
              << "-fonts" << "-aero" << "-window-drag" << "-menu-anims";
     auto process = new QProcess(this);
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert("SDL_APP_ID", "portalview");
+    process->setProcessEnvironment(environment);
     process->setProcessChannelMode(QProcess::MergedChannels);
     m_sessions.insert(id, process); emit changed();
     connect(process, &QProcess::readyReadStandardOutput, process, [process] { process->readAllStandardOutput(); });

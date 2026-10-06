@@ -11,6 +11,7 @@ int main(int argc, char **argv) {
     app.setOrganizationName("Portalview"); app.setApplicationName("Portalview");
     app.setApplicationVersion(PORTALVIEW_VERSION);
     app.setWindowIcon(QIcon(":/icons/portalview.png"));
+    app.setDesktopFileName("portalview");
     QQuickStyle::setStyle("Basic");
     Manager manager;
     Theme theme;
