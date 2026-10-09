@@ -14,7 +14,7 @@ docker run --rm --platform linux/arm64 \
         XDG_RUNTIME_DIR=/work/verify-aarch64/runtime \
         XDG_DATA_HOME=/work/verify-aarch64/data \
         XDG_CONFIG_HOME=/work/verify-aarch64/config \
-            timeout 15 verify-aarch64/usr/bin/portalview > verify-aarch64/smoke.log 2>&1
+            dbus-run-session -- timeout 15 verify-aarch64/usr/bin/portalview > verify-aarch64/smoke.log 2>&1
         smoke_status=$?
         set -e
         cat verify-aarch64/smoke.log
