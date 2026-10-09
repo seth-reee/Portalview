@@ -11,7 +11,7 @@ makedepends=('cmake' 'ninja' 'gcc')
 options=('!debug')
 # SRCDEST can hold the pinned archive before the release is published.
 source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('d6e3b2b1d9caeddf9d58b317de8331589073739c7ff7c1055f99cfc900cc6bae')
+sha256sums=('41031e3cd17dd219276b4e078270467346f1684fcf0a94f8340a4807f565840f')
 
 build() {
   cmake -S "$srcdir/Portalview-$pkgver" -B "build-$pkgver" -G Ninja \
