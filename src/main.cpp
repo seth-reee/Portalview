@@ -3,21 +3,31 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
+#include <QStandardPaths>
+#include <cstdio>
+#include "instance.h"
+#include "singleinstance.h"
 #include "manager.h"
 #include "theme.h"
 #include "tray.h"
-#include "singleinstance.h"
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     app.setOrganizationName("Portalview"); app.setApplicationName("Portalview");
-    app.setApplicationVersion(PORTALVIEW_VERSION);
-    SingleInstance instance;
-    const auto result = instance.start();
-    if (result == SingleInstance::Activated) return 0;
-    if (result == SingleInstance::Error) {
-        qCritical("Could not acquire Portalview's session bus service or activate the running instance.");
+    SingleInstance sessionInstance;
+    const auto sessionResult = sessionInstance.start();
+    if (sessionResult == SingleInstance::Activated) return 0;
+    if (sessionResult == SingleInstance::Error) {
+        qCritical("Could not acquire Portalview session service or activate the running instance.");
         return 1;
     }
+    Instance instance;
+    const auto result = instance.start(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    if (result == Instance::Activated) return 0;
+    if (result == Instance::Failed) {
+        fprintf(stderr, "%s\n", qPrintable(instance.error()));
+        return 1;
+    }
+    app.setApplicationVersion(PORTALVIEW_VERSION);
     app.setWindowIcon(QIcon(":/icons/portalview.png"));
     app.setDesktopFileName("portalview");
     QQuickStyle::setStyle("Basic");
@@ -40,8 +50,15 @@ int main(int argc, char **argv) {
     engine.rootContext()->setContextProperty("manager", &manager);
     engine.rootContext()->setContextProperty("theme", &theme);
     engine.rootContext()->setContextProperty("tray", &tray);
+    bool activationPending = false;
+    auto showWindow = [&engine, &activationPending] {
+        if (engine.rootObjects().isEmpty()) activationPending = true;
+        else QMetaObject::invokeMethod(engine.rootObjects().first(), "showMainMenu");
+    };
+    QObject::connect(&instance, &Instance::activationRequested, &engine, showWindow);
+    QObject::connect(&sessionInstance, &SingleInstance::activationRequested, &engine, showWindow);
     engine.loadFromModule("Portalview", "Main");
     if (engine.rootObjects().isEmpty()) return 1;
-    QObject::connect(&instance, &SingleInstance::activationRequested, &tray, &Tray::openRequested);
+    if (activationPending) showWindow();
     return app.exec();
 }

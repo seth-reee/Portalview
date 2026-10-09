@@ -25,6 +25,7 @@ For ARM64, use the `aarch64` filename instead. Pacman installs required dependen
 Both packages passed automated connection and UI tests and offscreen startup checks. **ARM64 status:** validation used Docker/QEMU; a real ARM64 Omarchy desktop and live RDP connection remain untested.
 
 Open **Portalview** from the application menu or run `portalview`.
+Launching it again opens the existing window, including when it is hidden in the tray. Only one instance can use a connection store at a time, preventing saved connections from being overwritten by another instance.
 
 Only one Portalview instance runs per desktop session. Launching it again brings the existing window back, including when hidden in the tray. A working D-Bus session bus is required.
 
@@ -37,6 +38,8 @@ Select a connection and choose **Connect**, or double click it. Enter the passwo
 Portalview disables SDL FreeRDP's Right Shift shortcuts by default so combinations such as Right Shift+D reach the remote desktop instead of disconnecting. On connection, it adds `SDL_KeyModMask: ["KMOD_NONE"]` to `$XDG_CONFIG_HOME/freerdp/sdl-freerdp.json` (normally `~/.config/freerdp/sdl-freerdp.json`) if the setting is absent. This also applies to other SDL FreeRDP sessions for your user; explicitly configured shortcut preferences are preserved.
 
 **Performance mode** requests modem network settings and 16-bit color, and disables wallpaper, themes, font smoothing, desktop composition, full window dragging, and menu animations. Save and reconnect to apply it. The remote server may override visual settings or negotiated color depth.
+
+**Capture desktop shortcuts** is off by default, including for previously saved connections. Desktop shortcuts such as Super+T stay local, while Ctrl+C/Ctrl+V and shortcuts your desktop does not intercept still reach the remote app. Enable it to let the remote session capture desktop shortcuts. Save and reconnect to apply it. **Share clipboard** separately controls copying content between your local and remote desktops.
 
 Enable **System Tray Icon** to keep Portalview running when its main window closes. Right click the tray icon for **Open Main Menu**, connections grouped by name, and **Close** to quit and disconnect sessions. The tray setting persists across launches. Without an available tray, closing the window exits normally.
 

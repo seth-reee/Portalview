@@ -49,6 +49,8 @@ private slots:
         QVERIFY(bytes.contains("/p:secret-test-value\n"));
         QVERIFY(bytes.contains("/v:[::1]:3389\n"));
         QVERIFY(bytes.contains("/wm-class:portalview\n"));
+        QVERIFY(bytes.contains("-grab-keyboard\n"));
+        QVERIFY(bytes.contains("+clipboard\n"));
         QFile appId(root + "/app-id"); QVERIFY(appId.open(QIODevice::ReadOnly));
         QCOMPARE(appId.readAll(), QByteArray("portalview\n"));
         QFile shortcuts(configRoot + "/freerdp/sdl-freerdp.json");
@@ -63,16 +65,21 @@ private slots:
         QVERIFY(!bytes.contains("/network:modem\n"));
         entry["host"] = "::1";
         entry["performanceMode"] = true;
+        entry["captureShortcuts"] = true;
         QVERIFY(manager.save(entry));
         Manager performanceRestored;
         QVERIFY(performanceRestored.connections().first().toMap()["performanceMode"].toBool());
+        QVERIFY(performanceRestored.connections().first().toMap()["captureShortcuts"].toBool());
         manager.connectTo(id, "secret-test-value");
         QTRY_VERIFY_WITH_TIMEOUT(!manager.connections().first().toMap()["active"].toBool(), 4000);
         input.close(); QVERIFY(input.open(QIODevice::ReadOnly));
         bytes = input.readAll();
+        QVERIFY(bytes.contains("+grab-keyboard\n"));
+        QVERIFY(!bytes.contains("-grab-keyboard\n"));
         for (const auto &option : {"/network:modem", "/bpp:16", "-wallpaper", "-themes", "-fonts", "-aero", "-window-drag", "-menu-anims"})
             QVERIFY2(bytes.contains(QByteArray(option) + '\n'), option);
         entry["performanceMode"] = false;
+        entry["captureShortcuts"] = false;
         QVERIFY(manager.save(entry));
         manager.connectTo(id, "secret-test-value");
         QTRY_VERIFY_WITH_TIMEOUT(!manager.connections().first().toMap()["active"].toBool(), 4000);
@@ -83,6 +90,8 @@ private slots:
         QVERIFY(shortcuts.open(QIODevice::ReadOnly));
         QCOMPARE(shortcuts.readAll(), customSettings);
         shortcuts.close();
+        QVERIFY(bytes.contains("-grab-keyboard\n"));
+        QVERIFY(!bytes.contains("+grab-keyboard\n"));
         QFile storage(root + "/connections.json"); QVERIFY(storage.open(QIODevice::ReadOnly));
         QVERIFY(!storage.readAll().contains("secret-test-value"));
         QVERIFY(fake.open(QIODevice::WriteOnly | QIODevice::Truncate));
