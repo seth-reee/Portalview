@@ -7,7 +7,7 @@ docker run --rm --platform linux/arm64 \
     portalview-qt-arm64:latest /usr/bin/bash -euc '
         mkdir -p verify-aarch64/runtime
         chmod 700 verify-aarch64/runtime
-        bsdtar -xf portalview-0.1.1-1-aarch64.pkg.tar.zst -C verify-aarch64
+        bsdtar -xf portalview-0.1.2-1-aarch64.pkg.tar.zst -C verify-aarch64
         readelf -h verify-aarch64/usr/bin/portalview | grep Machine
         set +e
         QT_QPA_PLATFORM=offscreen \

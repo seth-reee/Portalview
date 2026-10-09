@@ -6,10 +6,18 @@
 #include "manager.h"
 #include "theme.h"
 #include "tray.h"
+#include "singleinstance.h"
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     app.setOrganizationName("Portalview"); app.setApplicationName("Portalview");
     app.setApplicationVersion(PORTALVIEW_VERSION);
+    SingleInstance instance;
+    const auto result = instance.start();
+    if (result == SingleInstance::Activated) return 0;
+    if (result == SingleInstance::Error) {
+        qCritical("Could not acquire Portalview's session bus service or activate the running instance.");
+        return 1;
+    }
     app.setWindowIcon(QIcon(":/icons/portalview.png"));
     app.setDesktopFileName("portalview");
     QQuickStyle::setStyle("Basic");
@@ -34,5 +42,6 @@ int main(int argc, char **argv) {
     engine.rootContext()->setContextProperty("tray", &tray);
     engine.loadFromModule("Portalview", "Main");
     if (engine.rootObjects().isEmpty()) return 1;
+    QObject::connect(&instance, &SingleInstance::activationRequested, &tray, &Tray::openRequested);
     return app.exec();
 }

@@ -29,6 +29,9 @@ private slots:
         QVERIFY(!engine.rootObjects().isEmpty());
         auto window = qobject_cast<QQuickWindow*>(engine.rootObjects().first());
         QVERIFY(window);
+        window->hide();
+        emit tray.openRequested();
+        QTRY_VERIFY(window->isVisible());
         auto licenseText = window->findChild<QObject*>("aboutLicenseText");
         QVERIFY(licenseText);
         QVERIFY(licenseText->property("text").toString().contains("Permission is hereby granted"));

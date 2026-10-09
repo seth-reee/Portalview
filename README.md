@@ -17,7 +17,7 @@ Portalview helps you organize and connect to remote desktops from [Omarchy](http
 Download the package matching your architecture from [Releases](https://github.com/seth-reee/Portalview/releases): `x86_64` for standard Omarchy PCs or `aarch64` for ARM64.
 
 ```bash
-sudo pacman -U ./portalview-0.1.1-1-x86_64.pkg.tar.zst
+sudo pacman -U ./portalview-0.1.2-1-x86_64.pkg.tar.zst
 ```
 
 For ARM64, use the `aarch64` filename instead. Pacman installs required dependencies, including `freerdp`; FreeRDP is not bundled. Install `qt6-wayland` for native Wayland support if it is not already installed.
@@ -26,11 +26,15 @@ Both packages passed automated connection and UI tests and offscreen startup che
 
 Open **Portalview** from the application menu or run `portalview`.
 
+Only one Portalview instance runs per desktop session. Launching it again brings the existing window back, including when hidden in the tray. A working D-Bus session bus is required.
+
 ## Use
 
 Choose **Add connection**, enter a name, host, port, username, and optional domain, then save. Select an existing group or type a new group name. Leave the group blank for Ungrouped. Search matches connection names, hosts, usernames, and groups.
 
 Select a connection and choose **Connect**, or double click it. Enter the password when prompted. Remote desktops open in separate FreeRDP windows. **Disconnect** closes the selected session. Right click an entry and choose **Edit…** to change its settings.
+
+Portalview disables SDL FreeRDP's Right Shift shortcuts by default so combinations such as Right Shift+D reach the remote desktop instead of disconnecting. On connection, it adds `SDL_KeyModMask: ["KMOD_NONE"]` to `$XDG_CONFIG_HOME/freerdp/sdl-freerdp.json` (normally `~/.config/freerdp/sdl-freerdp.json`) if the setting is absent. This also applies to other SDL FreeRDP sessions for your user; explicitly configured shortcut preferences are preserved.
 
 **Performance mode** requests modem network settings and 16-bit color, and disables wallpaper, themes, font smoothing, desktop composition, full window dragging, and menu animations. Save and reconnect to apply it. The remote server may override visual settings or negotiated color depth.
 

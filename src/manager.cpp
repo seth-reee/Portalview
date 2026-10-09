@@ -6,6 +6,7 @@
 #include <QSaveFile>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QUuid>
 #include <QRegularExpression>
 #include <QTimer>
@@ -86,6 +87,29 @@ void Manager::connectTo(QString id, QString password) {
     if (entry.isEmpty()) { report("Connection no longer exists."); return; }
     QString executable = QStandardPaths::findExecutable("sdl-freerdp3");
     if (executable.isEmpty()) { report("Install the freerdp package to connect."); return; }
+    // SDL FreeRDP defaults to Right Shift hotkeys, including D to disconnect.
+    // Seed a safe default while respecting explicitly configured shortcuts.
+    const QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/freerdp";
+    const QString configPath = configDir + "/sdl-freerdp.json";
+    QJsonObject config;
+    QFile configFile(configPath);
+    if (configFile.exists()) {
+        if (!configFile.open(QIODevice::ReadOnly)) { report("Cannot read FreeRDP shortcut settings: " + configFile.errorString()); return; }
+        QJsonParseError error;
+        const auto document = QJsonDocument::fromJson(configFile.readAll(), &error);
+        if (error.error != QJsonParseError::NoError || !document.isObject()) { report("FreeRDP shortcut settings are invalid; repair sdl-freerdp.json before connecting."); return; }
+        config = document.object();
+        configFile.close();
+    }
+    if (!config.contains("SDL_KeyModMask")) {
+        config.insert("SDL_KeyModMask", QJsonArray {"KMOD_NONE"});
+        if (!QDir().mkpath(configDir)) { report("Cannot create FreeRDP settings directory."); return; }
+        QSaveFile output(configPath);
+        const QByteArray data = QJsonDocument(config).toJson();
+        if (!output.open(QIODevice::WriteOnly) || output.write(data) != data.size() || !output.commit()) {
+            report("Cannot save FreeRDP shortcut settings: " + output.errorString()); return;
+        }
+    }
     QString host = entry["host"].toString();
     if (host.contains(':') && !host.startsWith('[')) host = "[" + host + "]";
     QStringList args {"/v:" + host + ":" + entry["port"].toString(), "/u:" + entry["username"].toString(), "/p:" + password,

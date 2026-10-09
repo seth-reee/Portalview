@@ -3,6 +3,9 @@
 #include <QDir>
 #include <QFile>
 #include <QUuid>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "manager.h"
 class ManagerTest : public QObject {
     Q_OBJECT
@@ -10,6 +13,8 @@ private slots:
     void persistenceAndLaunch() {
         QCoreApplication::setOrganizationName("PortalviewTests");
         QCoreApplication::setApplicationName("run-" + QUuid::createUuid().toString(QUuid::WithoutBraces));
+        const QString configRoot = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/config";
+        qputenv("XDG_CONFIG_HOME", configRoot.toUtf8());
         Manager manager;
         QVariantMap entry {{"name", "Office"}, {"host", "::1"}, {"username", "alice"}, {"port", 3389}};
         QVERIFY(manager.save(entry));
@@ -46,6 +51,15 @@ private slots:
         QVERIFY(bytes.contains("/wm-class:portalview\n"));
         QFile appId(root + "/app-id"); QVERIFY(appId.open(QIODevice::ReadOnly));
         QCOMPARE(appId.readAll(), QByteArray("portalview\n"));
+        QFile shortcuts(configRoot + "/freerdp/sdl-freerdp.json");
+        QVERIFY(shortcuts.open(QIODevice::ReadOnly));
+        QCOMPARE(QJsonDocument::fromJson(shortcuts.readAll()).object()["SDL_KeyModMask"].toArray(), QJsonArray {"KMOD_NONE"});
+        shortcuts.close();
+        // An explicit preference and other SDL settings must survive future launches.
+        QVERIFY(shortcuts.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        const QByteArray customSettings = "{\"SDL_KeyModMask\":[\"KMOD_RCTRL\"],\"SDL_Disconnect\":\"SDL_SCANCODE_F12\"}\n";
+        QCOMPARE(shortcuts.write(customSettings), qint64(customSettings.size()));
+        shortcuts.close();
         QVERIFY(!bytes.contains("/network:modem\n"));
         entry["host"] = "::1";
         entry["performanceMode"] = true;
@@ -66,6 +80,9 @@ private slots:
         bytes = input.readAll();
         QVERIFY(!bytes.contains("/network:modem\n"));
         QVERIFY(!bytes.contains("/bpp:16\n"));
+        QVERIFY(shortcuts.open(QIODevice::ReadOnly));
+        QCOMPARE(shortcuts.readAll(), customSettings);
+        shortcuts.close();
         QFile storage(root + "/connections.json"); QVERIFY(storage.open(QIODevice::ReadOnly));
         QVERIFY(!storage.readAll().contains("secret-test-value"));
         QVERIFY(fake.open(QIODevice::WriteOnly | QIODevice::Truncate));
@@ -74,6 +91,25 @@ private slots:
         manager.connectTo(id, "secret-test-value");
         QTRY_VERIFY_WITH_TIMEOUT(!manager.connections().first().toMap()["active"].toBool(), 4000);
         QVERIFY(manager.message().contains("code 7"));
+        QVERIFY(shortcuts.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        shortcuts.write("{\"SDL_Disconnect\":\"SDL_SCANCODE_F12\"}");
+        shortcuts.close();
+        manager.connectTo(id, "secret-test-value");
+        QTRY_VERIFY_WITH_TIMEOUT(!manager.connections().first().toMap()["active"].toBool(), 4000);
+        QVERIFY(shortcuts.open(QIODevice::ReadOnly));
+        const auto seeded = QJsonDocument::fromJson(shortcuts.readAll()).object();
+        QCOMPARE(seeded["SDL_KeyModMask"].toArray(), QJsonArray {"KMOD_NONE"});
+        QCOMPARE(seeded["SDL_Disconnect"].toString(), QString("SDL_SCANCODE_F12"));
+        shortcuts.close();
+        QVERIFY(shortcuts.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        shortcuts.write("broken");
+        shortcuts.close();
+        manager.connectTo(id, "secret-test-value");
+        QVERIFY(!manager.connections().first().toMap()["active"].toBool());
+        QVERIFY(manager.message().contains("shortcut settings are invalid"));
+        QVERIFY(shortcuts.open(QIODevice::ReadOnly));
+        QCOMPARE(shortcuts.readAll(), QByteArray("broken"));
+        shortcuts.close();
         QVERIFY(manager.remove(id));
         QVERIFY(manager.connections().isEmpty());
         storage.close(); QVERIFY(storage.open(QIODevice::WriteOnly | QIODevice::Truncate));

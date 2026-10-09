@@ -1,17 +1,17 @@
 pkgname=portalview
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc='Qt Quick remote desktop connection manager for Omarchy'
 arch=('x86_64' 'aarch64')
 url='https://github.com/seth-reee/Portalview'
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'freerdp' 'gcc-libs' 'glibc')
+depends=('dbus' 'qt6-base' 'qt6-declarative' 'freerdp' 'gcc-libs' 'glibc')
 optdepends=('qt6-wayland: native Wayland support' 'omarchy: live desktop theme integration')
 makedepends=('cmake' 'ninja' 'gcc')
 options=('!debug')
 # SRCDEST can hold the pinned archive before the release is published.
 source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('bdd179686ac712f1cda771eaf862b5458a4a74676259a68a30e9cd010a3d802a')
+sha256sums=('d6e3b2b1d9caeddf9d58b317de8331589073739c7ff7c1055f99cfc900cc6bae')
 
 build() {
   cmake -S "$srcdir/Portalview-$pkgver" -B "build-$pkgver" -G Ninja \
