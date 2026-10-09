@@ -62,6 +62,7 @@ bool Manager::save(QVariantMap entry) {
     clean["port"] = port;
     clean["clipboard"] = entry.value("clipboard", true).toBool();
     clean["fullscreen"] = entry.value("fullscreen", false).toBool();
+    clean["captureShortcuts"] = entry.value("captureShortcuts", false).toBool();
     clean["performanceMode"] = entry.value("performanceMode", false).toBool();
     clean["trustFirst"] = entry.value("trustFirst", false).toBool();
     if (clean["id"].toString().isEmpty()) clean["id"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
@@ -90,7 +91,8 @@ void Manager::connectTo(QString id, QString password) {
     if (host.contains(':') && !host.startsWith('[')) host = "[" + host + "]";
     QStringList args {"/v:" + host + ":" + entry["port"].toString(), "/u:" + entry["username"].toString(), "/p:" + password,
         "/t:Portalview — " + entry["name"].toString(), "/wm-class:portalview", "+dynamic-resolution", "/size:1280x800", "/timeout:10000", "/log-level:ERROR",
-        entry["clipboard"].toBool() ? "+clipboard" : "-clipboard", entry["trustFirst"].toBool() ? "/cert:tofu" : "/cert:deny"};
+        entry["clipboard"].toBool() ? "+clipboard" : "-clipboard", entry["trustFirst"].toBool() ? "/cert:tofu" : "/cert:deny",
+        entry.value("captureShortcuts", false).toBool() ? "+grab-keyboard" : "-grab-keyboard"};
     if (!entry["domain"].toString().isEmpty()) args << "/d:" + entry["domain"].toString();
     if (entry["fullscreen"].toBool()) args << "/f";
     if (entry.value("performanceMode", false).toBool())

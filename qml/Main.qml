@@ -62,6 +62,7 @@ ApplicationWindow {
         portField.value = entry ? entry.port : 3389
         clipboard.checked = entry ? entry.clipboard : true
         fullscreen.checked = entry ? entry.fullscreen : false
+        captureShortcuts.checked = entry ? !!entry.captureShortcuts : false
         performance.checked = entry ? !!entry.performanceMode : false
         trust.checked = entry ? entry.trustFirst : false
         editor.open(); nameField.forceActiveFocus()
@@ -318,6 +319,11 @@ ApplicationWindow {
             EntryField { id: domainField; Layout.fillWidth: true }
             CheckBox { id: clipboard; text: "Share clipboard" }
             CheckBox { id: fullscreen; text: "Open fullscreen" }
+            Switch { id: captureShortcuts; objectName: "captureShortcutsToggle"; text: "Capture desktop shortcuts" }
+            Label {
+                text: "Off: desktop shortcuts such as Super+T stay local. Copy/paste and other shortcuts your desktop does not intercept still reach the remote app. Turn on to send desktop shortcuts to the remote session. Applies when you reconnect."
+                Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground
+            }
             Switch { id: performance; text: "Performance mode" }
             Label {
                 text: "Uses modem connection settings and 16-bit color; disables wallpaper, themes, font smoothing, composition, full window dragging and menu animations. Applies on the next connection."
@@ -332,7 +338,7 @@ ApplicationWindow {
                 ActionButton {
                     text: "Save"
                     onClicked: {
-                        if (manager.save({id: editor.entryId, name: nameField.text, group: groupField.editText, host: hostField.text, port: portField.value, username: userField.text, domain: domainField.text, clipboard: clipboard.checked, fullscreen: fullscreen.checked, performanceMode: performance.checked, trustFirst: trust.checked})) editor.close()
+                        if (manager.save({id: editor.entryId, name: nameField.text, group: groupField.editText, host: hostField.text, port: portField.value, username: userField.text, domain: domainField.text, clipboard: clipboard.checked, fullscreen: fullscreen.checked, captureShortcuts: captureShortcuts.checked, performanceMode: performance.checked, trustFirst: trust.checked})) editor.close()
                     }
                 }
             }

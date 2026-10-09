@@ -113,6 +113,16 @@ private slots:
         QVERIFY(editor);
         QTRY_VERIFY(editor->property("visible").toBool());
         QCOMPARE(editor->property("entryId").toString(), entry["id"].toString());
+        auto capture = window->findChild<QObject*>("captureShortcutsToggle");
+        QVERIFY(capture);
+        QVERIFY(!capture->property("checked").toBool());
+        entry = manager.connections().first().toMap();
+        entry["captureShortcuts"] = true;
+        QVERIFY(manager.save(entry));
+        QVERIFY(QMetaObject::invokeMethod(window, "edit", Q_ARG(QVariant, QVariant(entry))));
+        QVERIFY(capture->property("checked").toBool());
+        QVERIFY(QMetaObject::invokeMethod(window, "edit", Q_ARG(QVariant, QVariant())));
+        QVERIFY(!capture->property("checked").toBool());
         QVERIFY(QMetaObject::invokeMethod(editor, "close"));
         QVERIFY(QMetaObject::invokeMethod(contextMenu, "close"));
         for (auto size : {QSize(1040, 650), QSize(760, 540)}) {

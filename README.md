@@ -25,6 +25,7 @@ For ARM64, use the `aarch64` filename instead. Pacman installs required dependen
 Both packages passed automated connection and UI tests and offscreen startup checks. **ARM64 status:** validation used Docker/QEMU; a real ARM64 Omarchy desktop and live RDP connection remain untested.
 
 Open **Portalview** from the application menu or run `portalview`.
+Launching it again opens the existing window, including when it is hidden in the tray. Only one instance can use a connection store at a time, preventing saved connections from being overwritten by another instance.
 
 ## Use
 
@@ -33,6 +34,8 @@ Choose **Add connection**, enter a name, host, port, username, and optional doma
 Select a connection and choose **Connect**, or double click it. Enter the password when prompted. Remote desktops open in separate FreeRDP windows. **Disconnect** closes the selected session. Right click an entry and choose **Edit…** to change its settings.
 
 **Performance mode** requests modem network settings and 16-bit color, and disables wallpaper, themes, font smoothing, desktop composition, full window dragging, and menu animations. Save and reconnect to apply it. The remote server may override visual settings or negotiated color depth.
+
+**Capture desktop shortcuts** is off by default, including for previously saved connections. Desktop shortcuts such as Super+T stay local, while Ctrl+C/Ctrl+V and shortcuts your desktop does not intercept still reach the remote app. Enable it to let the remote session capture desktop shortcuts. Save and reconnect to apply it. **Share clipboard** separately controls copying content between your local and remote desktops.
 
 Enable **System Tray Icon** to keep Portalview running when its main window closes. Right click the tray icon for **Open Main Menu**, connections grouped by name, and **Close** to quit and disconnect sessions. The tray setting persists across launches. Without an available tray, closing the window exits normally.
 

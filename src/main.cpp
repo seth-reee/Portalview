@@ -3,12 +3,22 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
+#include <QStandardPaths>
+#include <cstdio>
+#include "instance.h"
 #include "manager.h"
 #include "theme.h"
 #include "tray.h"
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     app.setOrganizationName("Portalview"); app.setApplicationName("Portalview");
+    Instance instance;
+    const auto result = instance.start(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    if (result == Instance::Activated) return 0;
+    if (result == Instance::Failed) {
+        fprintf(stderr, "%s\n", qPrintable(instance.error()));
+        return 1;
+    }
     app.setApplicationVersion(PORTALVIEW_VERSION);
     app.setWindowIcon(QIcon(":/icons/portalview.png"));
     app.setDesktopFileName("portalview");
@@ -32,7 +42,14 @@ int main(int argc, char **argv) {
     engine.rootContext()->setContextProperty("manager", &manager);
     engine.rootContext()->setContextProperty("theme", &theme);
     engine.rootContext()->setContextProperty("tray", &tray);
+    bool activationPending = false;
+    auto showWindow = [&engine, &activationPending] {
+        if (engine.rootObjects().isEmpty()) activationPending = true;
+        else QMetaObject::invokeMethod(engine.rootObjects().first(), "showMainMenu");
+    };
+    QObject::connect(&instance, &Instance::activationRequested, &engine, showWindow);
     engine.loadFromModule("Portalview", "Main");
     if (engine.rootObjects().isEmpty()) return 1;
+    if (activationPending) showWindow();
     return app.exec();
 }
