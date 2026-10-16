@@ -60,6 +60,12 @@ bool Manager::save(QVariantMap entry) {
     if (clean["host"].toString().contains(QRegularExpression("\\s|/"))) { report("Enter a hostname or IP address without spaces or slashes."); return false; }
     int port = entry.value("port", 3389).toInt();
     if (port < 1 || port > 65535) { report("Port must be between 1 and 65535."); return false; }
+    bool validScale = false;
+    const int desktopScale = entry.value("desktopScale", 0).toInt(&validScale);
+    if (!validScale || (desktopScale != 0 && (desktopScale < 100 || desktopScale > 500))) {
+        report("Desktop scaling must be automatic or between 100 and 500 percent."); return false;
+    }
+    clean["desktopScale"] = desktopScale;
     clean["port"] = port;
     clean["clipboard"] = entry.value("clipboard", true).toBool();
     clean["fullscreen"] = entry.value("fullscreen", false).toBool();
@@ -117,6 +123,9 @@ void Manager::connectTo(QString id, QString password) {
         "/t:Portalview — " + entry["name"].toString(), "/wm-class:portalview", "+dynamic-resolution", "/size:1280x800", "/timeout:10000", "/log-level:ERROR",
         entry["clipboard"].toBool() ? "+clipboard" : "-clipboard", entry["trustFirst"].toBool() ? "/cert:tofu" : "/cert:deny",
         entry.value("captureShortcuts", false).toBool() ? "+grab-keyboard" : "-grab-keyboard"};
+    const int desktopScale = entry.value("desktopScale", 0).toInt();
+    if (desktopScale >= 100 && desktopScale <= 500)
+        args << "/scale-desktop:" + QString::number(desktopScale) << "/scale-device:100";
     if (!entry["domain"].toString().isEmpty()) args << "/d:" + entry["domain"].toString();
     if (entry["fullscreen"].toBool()) args << "/f";
     if (entry.value("performanceMode", false).toBool())

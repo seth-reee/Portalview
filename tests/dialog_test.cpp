@@ -120,12 +120,18 @@ private slots:
         QVERIFY(capture);
         QVERIFY(!capture->property("checked").toBool());
         entry = manager.connections().first().toMap();
+        auto scale = window->findChild<QObject*>("desktopScaleSelector");
+        QVERIFY(scale);
+        QCOMPARE(scale->property("currentIndex").toInt(), 0);
+        entry["desktopScale"] = 200;
         entry["captureShortcuts"] = true;
         QVERIFY(manager.save(entry));
         QVERIFY(QMetaObject::invokeMethod(window, "edit", Q_ARG(QVariant, QVariant(entry))));
         QVERIFY(capture->property("checked").toBool());
+        QCOMPARE(scale->property("currentIndex").toInt(), 5);
         QVERIFY(QMetaObject::invokeMethod(window, "edit", Q_ARG(QVariant, QVariant())));
         QVERIFY(!capture->property("checked").toBool());
+        QCOMPARE(scale->property("currentIndex").toInt(), 0);
         QVERIFY(QMetaObject::invokeMethod(editor, "close"));
         QVERIFY(QMetaObject::invokeMethod(contextMenu, "close"));
         for (auto size : {QSize(1040, 650), QSize(760, 540)}) {

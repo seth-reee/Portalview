@@ -61,6 +61,7 @@ ApplicationWindow {
         domainField.text = entry ? entry.domain : ""
         portField.value = entry ? entry.port : 3389
         clipboard.checked = entry ? entry.clipboard : true
+        desktopScale.currentIndex = Math.max(0, desktopScale.values.indexOf(entry ? (entry.desktopScale || 0) : 0))
         fullscreen.checked = entry ? entry.fullscreen : false
         captureShortcuts.checked = entry ? !!entry.captureShortcuts : false
         performance.checked = entry ? !!entry.performanceMode : false
@@ -324,6 +325,19 @@ ApplicationWindow {
                 text: "Off: desktop shortcuts such as Super+T stay local. Copy/paste and other shortcuts your desktop does not intercept still reach the remote app. Turn on to send desktop shortcuts to the remote session. Applies when you reconnect."
                 Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground
             }
+            Label { text: "Desktop scaling" }
+            GroupComboBox {
+                id: desktopScale
+                objectName: "desktopScaleSelector"
+                Layout.fillWidth: true
+                property var values: [0, 100, 125, 150, 175, 200, 250, 300, 400, 500]
+                model: ["Automatic (FreeRDP default)", "100%", "125%", "150%", "175%", "200%", "250%", "300%", "400%", "500%"]
+                Accessible.name: "Desktop scaling"
+            }
+            Label {
+                text: "Increase text and control sizes on high-resolution displays; try 200%. Auto-resize stays enabled. Save and reconnect to apply; server support is required."
+                Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground
+            }
             Switch { id: performance; text: "Performance mode" }
             Label {
                 text: "Uses modem connection settings and 16-bit color; disables wallpaper, themes, font smoothing, composition, full window dragging and menu animations. Applies on the next connection."
@@ -338,7 +352,7 @@ ApplicationWindow {
                 ActionButton {
                     text: "Save"
                     onClicked: {
-                        if (manager.save({id: editor.entryId, name: nameField.text, group: groupField.editText, host: hostField.text, port: portField.value, username: userField.text, domain: domainField.text, clipboard: clipboard.checked, fullscreen: fullscreen.checked, captureShortcuts: captureShortcuts.checked, performanceMode: performance.checked, trustFirst: trust.checked})) editor.close()
+                        if (manager.save({id: editor.entryId, name: nameField.text, group: groupField.editText, host: hostField.text, port: portField.value, username: userField.text, domain: domainField.text, clipboard: clipboard.checked, fullscreen: fullscreen.checked, captureShortcuts: captureShortcuts.checked, performanceMode: performance.checked, desktopScale: desktopScale.values[desktopScale.currentIndex], trustFirst: trust.checked})) editor.close()
                     }
                 }
             }

@@ -37,6 +37,8 @@ Select a connection and choose **Connect**, or double click it. Enter the passwo
 
 Portalview disables SDL FreeRDP's Right Shift shortcuts by default so combinations such as Right Shift+D reach the remote desktop instead of disconnecting. On connection, it adds `SDL_KeyModMask: ["KMOD_NONE"]` to `$XDG_CONFIG_HOME/freerdp/sdl-freerdp.json` (normally `~/.config/freerdp/sdl-freerdp.json`) if the setting is absent. This also applies to other SDL FreeRDP sessions for your user; explicitly configured shortcut preferences are preserved.
 
+**Desktop scaling** in the connection editor requests larger remote text and controls while keeping dynamic resolution enabled. Try **200%** on high-resolution displays. **Automatic** preserves FreeRDP’s default behavior for existing connections. Explicit percentages send `/scale-desktop:<percent>` and `/scale-device:100`. Save and reconnect to apply; the remote server must support scaling and may require signing out of an existing Windows session.
+
 **Performance mode** requests modem network settings and 16-bit color, and disables wallpaper, themes, font smoothing, desktop composition, full window dragging, and menu animations. Save and reconnect to apply it. The remote server may override visual settings or negotiated color depth.
 
 **Capture desktop shortcuts** is off by default, including for previously saved connections. Desktop shortcuts such as Super+T stay local, while Ctrl+C/Ctrl+V and shortcuts your desktop does not intercept still reach the remote app. Enable it to let the remote session capture desktop shortcuts. Save and reconnect to apply it. **Share clipboard** separately controls copying content between your local and remote desktops.
