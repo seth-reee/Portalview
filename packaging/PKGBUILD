@@ -1,5 +1,5 @@
 pkgname=portalview
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc='Qt Quick remote desktop connection manager for Omarchy'
 arch=('x86_64' 'aarch64')
@@ -11,7 +11,7 @@ makedepends=('cmake' 'ninja' 'gcc')
 options=('!debug')
 # SRCDEST can hold the pinned archive before the release is published.
 source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('41031e3cd17dd219276b4e078270467346f1684fcf0a94f8340a4807f565840f')
+sha256sums=('0aa565788880e72f271156a16c48e078a7346e2e22bb32ab0538e887dfa9c121')
 
 build() {
   cmake -S "$srcdir/Portalview-$pkgver" -B "build-$pkgver" -G Ninja \
