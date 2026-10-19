@@ -45,6 +45,8 @@ Portalview disables SDL FreeRDP's Right Shift shortcuts by default so combinatio
 
 Enable **System Tray Icon** to keep Portalview running when its main window closes. Right click the tray icon for **Open Main Menu**, connections grouped by name, and **Close** to quit and disconnect sessions. The tray setting persists across launches. Without an available tray, closing the window exits normally.
 
+Other apps can open a prefilled connection editor using `portalview --add-host 192.168.1.10 --name "Office workstation"`. Requests go to the running instance when available. Supply a username and save normally; an existing connection with the same host and default RDP port opens for editing. No connection is saved automatically.
+
 Connections are stored in `~/.local/share/Portalview/Portalview/connections.json` by default, respecting `XDG_DATA_HOME`. Saves are atomic. Passwords are used only for the current session. Certificates must be trusted by default; the per-connection trust-on-first-use option remembers the initial certificate using FreeRDP's certificate store and rejects changes.
 
 ## Build

@@ -134,6 +134,18 @@ private slots:
         QCOMPARE(scale->property("currentIndex").toInt(), 0);
         QVERIFY(QMetaObject::invokeMethod(editor, "close"));
         QVERIFY(QMetaObject::invokeMethod(contextMenu, "close"));
+        const auto savedCount = manager.connections().size();
+        QVERIFY(QMetaObject::invokeMethod(window, "addHost", Q_ARG(QVariant, QString("192.168.1.42")), Q_ARG(QVariant, QString("Office PC"))));
+        QVERIFY(editor->property("visible").toBool());
+        QCOMPARE(editor->property("entryId").toString(), QString());
+        QCOMPARE(window->findChild<QObject*>("hostField")->property("text").toString(), QString("192.168.1.42"));
+        QCOMPARE(window->findChild<QObject*>("nameField")->property("text").toString(), QString("Office PC"));
+        QCOMPARE(window->findChild<QObject*>("userField")->property("text").toString(), QString());
+        QCOMPARE(manager.connections().size(), savedCount);
+        QVERIFY(QMetaObject::invokeMethod(window, "addHost", Q_ARG(QVariant, QString("localhost")), Q_ARG(QVariant, QString("Replacement"))));
+        QCOMPARE(editor->property("entryId").toString(), manager.connections().first().toMap()["id"].toString());
+        QCOMPARE(window->findChild<QObject*>("nameField")->property("text").toString(), QString("Office"));
+        QVERIFY(QMetaObject::invokeMethod(editor, "close"));
         for (auto size : {QSize(1040, 650), QSize(760, 540)}) {
             window->resize(size);
             for (const auto &name : {"connectionEditor", "passwordDialog", "deleteDialog", "aboutDialog"}) {

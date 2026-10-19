@@ -68,6 +68,19 @@ ApplicationWindow {
         trust.checked = entry ? entry.trustFirst : false
         editor.open(); nameField.forceActiveFocus()
     }
+    function addHost(host, name) {
+        root.showMainMenu()
+        // Reuse an existing RDP connection without replacing its saved settings.
+        const existing = manager.connections.find(e => e.host.toLowerCase() === host.toLowerCase() && e.port === 3389)
+        if (existing) {
+            root.edit(existing)
+            return
+        }
+        root.edit(null)
+        nameField.text = name || host
+        hostField.text = host
+        userField.forceActiveFocus()
+    }
     function connectSelected() {
         if (!selected || selected.active) return
         passwordDialog.connectionId = selected.id
@@ -297,7 +310,7 @@ ApplicationWindow {
                 id: editorForm
                 width: parent.width; spacing: 10
             Label { text: "Name" }
-            EntryField { id: nameField; Layout.fillWidth: true; placeholderText: "Office workstation" }
+            EntryField { id: nameField; objectName: "nameField"; Layout.fillWidth: true; placeholderText: "Office workstation" }
             Label { text: "Group (optional)" }
             GroupComboBox {
                 id: groupField
@@ -311,11 +324,11 @@ ApplicationWindow {
             }
             Label { text: "Choose a group or type a new name. Leave blank for Ungrouped."; Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground }
             RowLayout {
-                ColumnLayout { Layout.fillWidth: true; Label { text: "Host" } EntryField { id: hostField; Layout.fillWidth: true; placeholderText: "Hostname or IP address" } }
+                ColumnLayout { Layout.fillWidth: true; Label { text: "Host" } EntryField { id: hostField; objectName: "hostField"; Layout.fillWidth: true; placeholderText: "Hostname or IP address" } }
                 ColumnLayout { Label { text: "Port" } SpinBox { id: portField; from: 1; to: 65535; value: 3389; editable: true } }
             }
             Label { text: "Username" }
-            EntryField { id: userField; Layout.fillWidth: true }
+            EntryField { id: userField; objectName: "userField"; Layout.fillWidth: true }
             Label { text: "Domain (optional)" }
             EntryField { id: domainField; Layout.fillWidth: true }
             CheckBox { id: clipboard; text: "Share clipboard" }
