@@ -1,6 +1,6 @@
 # <img src="Portalview.png" width="48" height="48" alt=""> Portalview
 
-Portalview helps you organize and connect to remote desktops from [Omarchy](https://omarchy.org/). Built with C++ and Qt Quick, it uses the system-installed FreeRDP 3 client for remote session windows.
+Portalview helps you organize and connect to remote desktops from [Omarchy](https://omarchy.org/). Built with C++ and Qt Quick, it uses FreeRDP 3 for remote session windows, preferring an installed private 3.31.1 X11 runtime when available.
 
 ## What it does
 
@@ -20,7 +20,7 @@ Download the package matching your architecture from [Releases](https://github.c
 sudo pacman -U ./portalview-0.1.2-1-x86_64.pkg.tar.zst
 ```
 
-For ARM64, use the `aarch64` filename instead. Pacman installs required dependencies, including `freerdp`; FreeRDP is not bundled. Install `qt6-wayland` for native Wayland support if it is not already installed.
+For ARM64, use the `aarch64` filename instead. Pacman installs required dependencies, including `freerdp`; The standard package does not bundle FreeRDP; a private runtime can be installed as described below. Install `qt6-wayland` for native Wayland support if it is not already installed.
 
 Both packages passed automated connection and UI tests and offscreen startup checks. **ARM64 status:** validation used Docker/QEMU; a real ARM64 Omarchy desktop and live RDP connection remain untested.
 
@@ -35,7 +35,7 @@ Choose **Add connection**, enter a name, host, port, username, and optional doma
 
 Select a connection and choose **Connect**, or double click it. Enter the password when prompted. Remote desktops open in separate FreeRDP windows. **Disconnect** closes the selected session. Right click an entry and choose **Edit…** to change its settings.
 
-Portalview disables SDL FreeRDP's Right Shift shortcuts by default so combinations such as Right Shift+D reach the remote desktop instead of disconnecting. On connection, it adds `SDL_KeyModMask: ["KMOD_NONE"]` to `$XDG_CONFIG_HOME/freerdp/sdl-freerdp.json` (normally `~/.config/freerdp/sdl-freerdp.json`) if the setting is absent. This also applies to other SDL FreeRDP sessions for your user; explicitly configured shortcut preferences are preserved.
+When using the system SDL client, Portalview disables SDL FreeRDP's Right Shift shortcuts by default so combinations such as Right Shift+D reach the remote desktop instead of disconnecting. On connection, it adds `SDL_KeyModMask: ["KMOD_NONE"]` to `$XDG_CONFIG_HOME/freerdp/sdl-freerdp.json` (normally `~/.config/freerdp/sdl-freerdp.json`) if the setting is absent. This also applies to other SDL FreeRDP sessions for your user; explicitly configured shortcut preferences are preserved.
 
 **Desktop scaling** in the connection editor requests larger remote text and controls while keeping dynamic resolution enabled. Try **200%** on high-resolution displays. **Automatic** preserves FreeRDP’s default behavior for existing connections. Explicit percentages send `/scale-desktop:<percent>` and `/scale-device:100`. Save and reconnect to apply; the remote server must support scaling and may require signing out of an existing Windows session.
 
@@ -81,3 +81,29 @@ Every push to `master` prepares the next patch version, builds native x86_64 and
 Pull requests build development packages without publishing. Manual runs on `master` also release; matching version tags build and publish that version. Package and source artifacts are available from the **Arch Linux packages** workflow. Published releases are verified on retries and never replaced.
 
 Existing tests run during packaging where available, followed by packaged executable startup checks with an isolated D-Bus session. Both architectures verify package metadata and ELF architecture. CI does not establish real ARM desktop, Wayland, hardware GPU, or live network behavior.
+
+## Private FreeRDP runtime
+
+To work around rendering lag, Portalview prefers FreeRDP 3.31.1's X11 client
+when a private runtime is installed. On Wayland this requires XWayland.
+It checks `../lib/portalview/freerdp-3.31.1` relative to the executable, then
+`$XDG_DATA_HOME/portalview/freerdp-3.31.1` (normally under `~/.local/share`).
+Without either runtime it uses the system SDL client as before.
+
+Stage a trusted, matching-architecture Arch package with:
+
+```sh
+bash packaging/install-private-freerdp.sh /path/to/freerdp-2:3.31.1-1-x86_64.pkg.tar.zst
+```
+
+The script copies only the X11 executable and its matching FreeRDP/WinPR libraries,
+records the package checksum and includes the Apache 2.0 license. Other shared
+libraries remain system dependencies; this is not a fully portable bundle.
+The runtime library path applies only to the child process. X11 sessions do not
+read or modify SDL shortcut configuration. Passwords continue to use stdin.
+
+For a bundled build, stage to a separate directory and configure CMake with
+`-DPORTALVIEW_FREERDP_RUNTIME=/absolute/path/to/staged/runtime`.
+Redistributed builds must retain applicable dependency licenses and notices.
+The pinned version needs deliberate security review and updates; remove or rename
+the private runtime directory to return to the maintained system client.

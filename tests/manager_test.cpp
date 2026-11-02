@@ -137,6 +137,29 @@ private slots:
         QVERIFY(shortcuts.open(QIODevice::ReadOnly));
         QCOMPARE(shortcuts.readAll(), QByteArray("broken"));
         shortcuts.close();
+        // A private X11 runtime bypasses broken SDL settings and gets its own libraries.
+        const QString runtime = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+                                + "/portalview/freerdp-3.31.1";
+        QVERIFY(QDir().mkpath(runtime + "/bin"));
+        QVERIFY(QDir().mkpath(runtime + "/lib"));
+        QFile x11(runtime + "/bin/xfreerdp3");
+        QVERIFY(x11.open(QIODevice::WriteOnly));
+        x11.write("#!/bin/sh\nprintf '%s' \"$LD_LIBRARY_PATH\" > \"$PORTALVIEW_TEST_ROOT/library-path\"\ncat > \"$PORTALVIEW_TEST_ROOT/x11-input\"\n");
+        x11.close();
+        QVERIFY(x11.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner));
+        const QByteArray parentLibraryPath = qgetenv("LD_LIBRARY_PATH");
+        manager.connectTo(id, "private-runtime-secret");
+        QTRY_VERIFY_WITH_TIMEOUT(!manager.connections().first().toMap()["active"].toBool(), 4000);
+        QCOMPARE(manager.message(), QString("Session closed."));
+        QFile libraryPath(root + "/library-path"); QVERIFY(libraryPath.open(QIODevice::ReadOnly));
+        QVERIFY(libraryPath.readAll().startsWith((runtime + "/lib").toUtf8()));
+        QCOMPARE(qgetenv("LD_LIBRARY_PATH"), parentLibraryPath);
+        QFile x11Input(root + "/x11-input"); QVERIFY(x11Input.open(QIODevice::ReadOnly));
+        QVERIFY(x11Input.readAll().contains("/p:private-runtime-secret\n"));
+        QVERIFY(shortcuts.open(QIODevice::ReadOnly));
+        QCOMPARE(shortcuts.readAll(), QByteArray("broken"));
+        shortcuts.close();
+        QVERIFY(QDir(runtime).removeRecursively());
         QVERIFY(manager.remove(id));
         QVERIFY(manager.connections().isEmpty());
         storage.close(); QVERIFY(storage.open(QIODevice::WriteOnly | QIODevice::Truncate));

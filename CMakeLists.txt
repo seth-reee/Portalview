@@ -44,3 +44,12 @@ if(BUILD_TESTING)
     add_test(NAME dialogs COMMAND portalview_ui_tests)
     set_tests_properties(dialogs PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_DATA_HOME=${CMAKE_BINARY_DIR}/test-data;XDG_CONFIG_HOME=${CMAKE_BINARY_DIR}/test-data/config")
 endif()
+
+# Optional private runtime staged by packaging/install-private-freerdp.sh.
+set(PORTALVIEW_FREERDP_RUNTIME "" CACHE PATH "Staged FreeRDP 3.31.1 runtime")
+if(PORTALVIEW_FREERDP_RUNTIME)
+    if(NOT EXISTS "${PORTALVIEW_FREERDP_RUNTIME}/bin/xfreerdp3")
+        message(FATAL_ERROR "Private FreeRDP runtime is missing bin/xfreerdp3")
+    endif()
+    install(DIRECTORY "${PORTALVIEW_FREERDP_RUNTIME}/" DESTINATION lib/portalview/freerdp-3.31.1 USE_SOURCE_PERMISSIONS)
+endif()

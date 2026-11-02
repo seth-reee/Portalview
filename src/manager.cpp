@@ -1,5 +1,6 @@
 #include "manager.h"
 #include <QStandardPaths>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -92,29 +93,44 @@ void Manager::connectTo(QString id, QString password) {
     QVariantMap entry;
     for (auto value : m_entries) if (value.toMap()["id"].toString() == id) entry = value.toMap();
     if (entry.isEmpty()) { report("Connection no longer exists."); return; }
-    QString executable = QStandardPaths::findExecutable("sdl-freerdp3");
+    // Prefer an app-private runtime; never change the parent process library path.
+    QString runtime;
+    const QStringList runtimeCandidates {
+        QCoreApplication::applicationDirPath() + "/../lib/portalview/freerdp-3.31.1",
+        QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/portalview/freerdp-3.31.1"
+    };
+    for (const auto &candidate : runtimeCandidates) {
+        if (QFileInfo(candidate + "/bin/xfreerdp3").isExecutable()) {
+            runtime = QDir::cleanPath(candidate);
+            break;
+        }
+    }
+    QString executable = runtime.isEmpty() ? QStandardPaths::findExecutable("sdl-freerdp3")
+                                           : runtime + "/bin/xfreerdp3";
     if (executable.isEmpty()) { report("Install the freerdp package to connect."); return; }
     // SDL FreeRDP defaults to Right Shift hotkeys, including D to disconnect.
     // Seed a safe default while respecting explicitly configured shortcuts.
-    const QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/freerdp";
-    const QString configPath = configDir + "/sdl-freerdp.json";
-    QJsonObject config;
-    QFile configFile(configPath);
-    if (configFile.exists()) {
-        if (!configFile.open(QIODevice::ReadOnly)) { report("Cannot read FreeRDP shortcut settings: " + configFile.errorString()); return; }
-        QJsonParseError error;
-        const auto document = QJsonDocument::fromJson(configFile.readAll(), &error);
-        if (error.error != QJsonParseError::NoError || !document.isObject()) { report("FreeRDP shortcut settings are invalid; repair sdl-freerdp.json before connecting."); return; }
-        config = document.object();
-        configFile.close();
-    }
-    if (!config.contains("SDL_KeyModMask")) {
-        config.insert("SDL_KeyModMask", QJsonArray {"KMOD_NONE"});
-        if (!QDir().mkpath(configDir)) { report("Cannot create FreeRDP settings directory."); return; }
-        QSaveFile output(configPath);
-        const QByteArray data = QJsonDocument(config).toJson();
-        if (!output.open(QIODevice::WriteOnly) || output.write(data) != data.size() || !output.commit()) {
-            report("Cannot save FreeRDP shortcut settings: " + output.errorString()); return;
+    if (runtime.isEmpty()) {
+        const QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/freerdp";
+        const QString configPath = configDir + "/sdl-freerdp.json";
+        QJsonObject config;
+        QFile configFile(configPath);
+        if (configFile.exists()) {
+            if (!configFile.open(QIODevice::ReadOnly)) { report("Cannot read FreeRDP shortcut settings: " + configFile.errorString()); return; }
+            QJsonParseError error;
+            const auto document = QJsonDocument::fromJson(configFile.readAll(), &error);
+            if (error.error != QJsonParseError::NoError || !document.isObject()) { report("FreeRDP shortcut settings are invalid; repair sdl-freerdp.json before connecting."); return; }
+            config = document.object();
+            configFile.close();
+        }
+        if (!config.contains("SDL_KeyModMask")) {
+            config.insert("SDL_KeyModMask", QJsonArray {"KMOD_NONE"});
+            if (!QDir().mkpath(configDir)) { report("Cannot create FreeRDP settings directory."); return; }
+            QSaveFile output(configPath);
+            const QByteArray data = QJsonDocument(config).toJson();
+            if (!output.open(QIODevice::WriteOnly) || output.write(data) != data.size() || !output.commit()) {
+                report("Cannot save FreeRDP shortcut settings: " + output.errorString()); return;
+            }
         }
     }
     QString host = entry["host"].toString();
@@ -134,6 +150,11 @@ void Manager::connectTo(QString id, QString password) {
     auto process = new QProcess(this);
     auto environment = QProcessEnvironment::systemEnvironment();
     environment.insert("SDL_APP_ID", "portalview");
+    if (!runtime.isEmpty()) {
+        const QString inherited = environment.value("LD_LIBRARY_PATH");
+        environment.insert("LD_LIBRARY_PATH", runtime + "/lib" +
+                           (inherited.isEmpty() ? QString() : ":" + inherited));
+    }
     process->setProcessEnvironment(environment);
     process->setProcessChannelMode(QProcess::MergedChannels);
     m_sessions.insert(id, process); emit changed();
