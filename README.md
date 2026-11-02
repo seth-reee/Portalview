@@ -107,3 +107,52 @@ For a bundled build, stage to a separate directory and configure CMake with
 Redistributed builds must retain applicable dependency licenses and notices.
 The pinned version needs deliberate security review and updates; remove or rename
 the private runtime directory to return to the maintained system client.
+
+## NixOS and Nix-based Omarchy forks
+
+The flake supports `x86_64-linux` and `aarch64-linux`. It builds FreeRDP 3.31.1
+from pinned source with Nix libraries and uses its X11 client automatically.
+Enable XWayland in your compositor for remote session windows. Omarchy is optional;
+Portalview uses its default colors when no Omarchy theme is available.
+
+From a checkout:
+
+```sh
+nix build .#portalview
+nix run .#portalview
+```
+
+To include Portalview in a NixOS flake, add this input (keep its own pinned
+nixpkgs input so the tested FreeRDP build remains reproducible):
+
+```nix
+inputs.portalview.url = "github:seth-reee/Portalview";
+```
+
+Pass `inputs` to your modules with `specialArgs = { inherit inputs; };`, then add:
+
+```nix
+{ inputs, pkgs, ... }: {
+  environment.systemPackages = [
+    inputs.portalview.packages.${pkgs.stdenv.hostPlatform.system}.portalview
+  ];
+}
+```
+
+The same package expression works in Home Manager's `home.packages` when `inputs`
+is provided through `extraSpecialArgs`. Update your flake lock to pick up releases.
+
+CI builds and tests both architectures and attaches `*-nix-SYSTEM.nar.xz`,
+matching `.store-path` files, and checksums to releases alongside the Arch packages.
+These exports include the runtime dependency closure. Download the three matching
+files for your architecture, then import and install (replace VERSION and SYSTEM):
+
+```sh
+sha256sum -c SHA256SUMS-nix-SYSTEM
+xz -dc portalview-VERSION-nix-SYSTEM.nar.xz | sudo nix-store --import
+nix profile install "$(cat portalview-VERSION-nix-SYSTEM.store-path)"
+```
+
+On a single-user Nix installation, omit `sudo`. Flake-based NixOS configuration is
+preferred for a declarative installation; the exports avoid rebuilding on the
+machine where you want to try Portalview. Nix must already be installed.

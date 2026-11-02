@@ -5,7 +5,7 @@ Keep CMakeLists.txt and packaging/PKGBUILD versions aligned; the app reads the C
 
 Artifacts belong in ../release-artifacts/Portalview. The source archive contains
 CMakeLists.txt, LICENSE, README.md, Portalview.png, src/, qml/, tests/, and
-packaging/portalview.desktop under Portalview-VERSION/. Exclude build output,
+packaging/portalview.desktop, flake.nix, flake.lock, and packaging/nix/ under Portalview-VERSION/. Exclude build output,
 saved connections, and PKGBUILD. Pin its SHA256 in packaging/PKGBUILD.
 
 The recipe downloads the pinned source archive from the matching GitHub release.
@@ -30,3 +30,12 @@ Docker access requires sandbox escalation. Both builds run the connection and
 offscreen UI tests. Inspect metadata, package contents, ELF architecture and run
 an offscreen smoke test of the packaged ARM executable. QEMU checks do not verify
 real ARM desktop or RDP behavior. Building does not authorize publishing.
+
+# Nix packages
+
+flake.nix pins nixpkgs and FreeRDP 3.31.1 source for x86_64-linux/aarch64-linux.
+Build with `nix build .#portalview`; its check phase runs the application tests.
+Keep the source archive's Nix files in packaging/prepare-ci.sh in sync with the flake.
+CI builds both systems on native runners before release, exports the complete runtime
+closures, and publishes them with SHA256SUMS-nix-* manifests. Do not reuse Arch
+FreeRDP binaries in Nix packages. The X11 client requires compositor XWayland support.
