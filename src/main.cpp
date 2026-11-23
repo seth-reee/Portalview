@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     parser.process(app);
     const QString requestedHost = parser.value("add-host").trimmed();
     const QString requestedName = parser.value("name").trimmed();
-    if ((parser.isSet("add-host") && !QRegularExpression("^[A-Za-z0-9_.:-]+$").match(requestedHost).hasMatch())
+    if ((parser.isSet("add-host") && !QRegularExpression("^(\\[[0-9A-Fa-f]*:[0-9A-Fa-f:]+\\]|[A-Za-z0-9_.:-]+)$").match(requestedHost).hasMatch())
         || (parser.isSet("name") && requestedHost.isEmpty())
         || requestedName.contains('\n') || requestedName.contains('\r') || requestedName.contains(QChar(0))) {
         fprintf(stderr, "Enter a host without spaces or slashes, and a single-line name.\n");

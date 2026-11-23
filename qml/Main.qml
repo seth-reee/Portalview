@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs as Dialogs
 
 ApplicationWindow {
     id: root
@@ -42,6 +43,25 @@ ApplicationWindow {
             root.connectSelected()
         }
     }
+    Connections {
+        target: manager
+        function onImportNeedsReview(entry) {
+            root.showMainMenu()
+            root.edit(entry)
+            userField.forceActiveFocus()
+        }
+    }
+    Dialogs.FolderDialog {
+        id: folderPicker
+        title: "Select shared folder"
+        onAccepted: sharedFolderField.text = manager.localPath(selectedFolder)
+    }
+    Dialogs.FileDialog {
+        id: importPicker
+        title: "Import connections"
+        nameFilters: ["RDP and JSON files (*.rdp *.json)", "RDP files (*.rdp)", "JSON files (*.json)", "All files (*)"]
+        onAccepted: manager.importFile(manager.localPath(selectedFile))
+    }
     property var selectedGroup: null
     property var groupNames: [...new Set(manager.connections.map(e => e.group || "").filter(g => g.length > 0))].sort((a, b) => a.localeCompare(b))
     property var groupOptions: [{label: "All groups", value: null}, {label: "Ungrouped", value: ""}].concat(groupNames.map(g => ({label: g, value: g})))
@@ -53,19 +73,24 @@ ApplicationWindow {
         return null
     }
     function edit(entry) {
-        editor.entryId = entry ? entry.id : ""
-        nameField.text = entry ? entry.name : ""
+        editor.entryId = entry && entry.id ? entry.id : ""
+        editor.errorMessage = ""
+        nameField.text = entry && entry.name ? entry.name : ""
         groupField.editText = entry ? (entry.group || "") : (selectedGroup || "")
-        hostField.text = entry ? entry.host : ""
-        userField.text = entry ? entry.username : ""
-        domainField.text = entry ? entry.domain : ""
-        portField.value = entry ? entry.port : 3389
-        clipboard.checked = entry ? entry.clipboard : true
+        hostField.text = entry && entry.host ? entry.host : ""
+        userField.text = entry && entry.username ? entry.username : ""
+        domainField.text = entry && entry.domain ? entry.domain : ""
+        portField.value = entry && entry.port ? entry.port : 3389
+        sharedFolderField.text = entry && entry.sharedFolder ? entry.sharedFolder : ""
+        clipboard.checked = entry && entry.clipboard !== undefined ? !!entry.clipboard : true
         desktopScale.currentIndex = Math.max(0, desktopScale.values.indexOf(entry ? (entry.desktopScale || 0) : 0))
-        fullscreen.checked = entry ? entry.fullscreen : false
+        fullscreen.checked = entry ? !!entry.fullscreen : false
+        multimon.checked = entry ? !!entry.multimon : false
         captureShortcuts.checked = entry ? !!entry.captureShortcuts : false
+        audioMode.currentIndex = Math.max(0, audioMode.values.indexOf(entry && entry.audioMode ? entry.audioMode : "none"))
+        microphone.checked = entry ? !!entry.microphone : false
         performance.checked = entry ? !!entry.performanceMode : false
-        trust.checked = entry ? entry.trustFirst : false
+        trust.checked = entry ? !!entry.trustFirst : false
         editor.open(); nameField.forceActiveFocus()
     }
     function addHost(host, name) {
@@ -194,6 +219,7 @@ ApplicationWindow {
                 onActivated: root.selectedGroup = root.groupOptions[index].value
                 Accessible.name: "Filter by group"
             }
+            ActionButton { text: "Import…"; onClicked: importPicker.open() }
             ActionButton { text: "Add connection"; onClicked: root.edit(null) }
         }
         Rectangle {
@@ -299,10 +325,12 @@ ApplicationWindow {
     Dialog {
         id: editor
         property string entryId: ""
+        property string errorMessage: ""
         objectName: "connectionEditor"
         anchors.centerIn: parent; implicitWidth: 480; modal: true
         height: Math.min(implicitHeight, root.height - 40)
         title: entryId ? "Edit connection" : "Add connection"
+        onClosed: errorMessage = ""
         contentItem: ScrollView {
             implicitHeight: editorForm.implicitHeight
             contentWidth: availableWidth
@@ -331,11 +359,37 @@ ApplicationWindow {
             EntryField { id: userField; objectName: "userField"; Layout.fillWidth: true }
             Label { text: "Domain (optional)" }
             EntryField { id: domainField; Layout.fillWidth: true }
+            Label { text: "Shared folder (optional)" }
+            RowLayout {
+                Layout.fillWidth: true
+                EntryField { id: sharedFolderField; objectName: "sharedFolderField"; Layout.fillWidth: true; placeholderText: "Local folder path" }
+                ActionButton { text: "Browse…"; onClicked: folderPicker.open() }
+                ActionButton { text: "Clear"; enabled: sharedFolderField.text.length > 0; onClicked: sharedFolderField.clear() }
+            }
+            Label {
+                text: "Shares a local folder as a network drive inside the remote session. Applies when you reconnect."
+                Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground
+            }
             CheckBox { id: clipboard; text: "Share clipboard" }
             CheckBox { id: fullscreen; text: "Open fullscreen" }
+            CheckBox { id: multimon; objectName: "multimonCheckBox"; text: "Use all monitors (fullscreen)" }
             Switch { id: captureShortcuts; objectName: "captureShortcutsToggle"; text: "Capture desktop shortcuts" }
             Label {
                 text: "Off: desktop shortcuts such as Super+T stay local. Copy/paste and other shortcuts your desktop does not intercept still reach the remote app. Turn on to send desktop shortcuts to the remote session. Applies when you reconnect."
+                Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground
+            }
+            Label { text: "Audio redirection" }
+            GroupComboBox {
+                id: audioMode
+                objectName: "audioModeSelector"
+                Layout.fillWidth: true
+                property var values: ["none", "local", "remote"]
+                model: ["Do not play", "Play on this computer", "Play on remote computer"]
+                Accessible.name: "Audio redirection"
+            }
+            Switch { id: microphone; objectName: "microphoneToggle"; text: "Redirect microphone" }
+            Label {
+                text: "Controls where remote audio plays and whether your local microphone is forwarded. Applies when you reconnect."
                 Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground
             }
             Label { text: "Desktop scaling" }
@@ -358,14 +412,19 @@ ApplicationWindow {
             }
             CheckBox { id: trust; text: "Trust certificate on first connection" }
             Label { text: "When enabled, FreeRDP remembers the first certificate and rejects changes. Otherwise a trusted certificate is required."; Layout.fillWidth: true; wrapMode: Text.Wrap; color: theme.colors.light_foreground }
-            Label { text: manager.message; Layout.fillWidth: true; wrapMode: Text.Wrap }
+            Label { objectName: "editorErrorLabel"; text: editor.errorMessage; visible: text.length > 0; Layout.fillWidth: true; wrapMode: Text.Wrap }
             RowLayout {
                 Item { Layout.fillWidth: true }
                 ActionButton { text: "Cancel"; onClicked: editor.close() }
                 ActionButton {
                     text: "Save"
                     onClicked: {
-                        if (manager.save({id: editor.entryId, name: nameField.text, group: groupField.editText, host: hostField.text, port: portField.value, username: userField.text, domain: domainField.text, clipboard: clipboard.checked, fullscreen: fullscreen.checked, captureShortcuts: captureShortcuts.checked, performanceMode: performance.checked, desktopScale: desktopScale.values[desktopScale.currentIndex], trustFirst: trust.checked})) editor.close()
+                        if (manager.save({id: editor.entryId, name: nameField.text, group: groupField.editText, host: hostField.text, port: portField.value, username: userField.text, domain: domainField.text, sharedFolder: sharedFolderField.text, clipboard: clipboard.checked, fullscreen: fullscreen.checked, multimon: multimon.checked, captureShortcuts: captureShortcuts.checked, audioMode: audioMode.values[audioMode.currentIndex], microphone: microphone.checked, performanceMode: performance.checked, desktopScale: desktopScale.values[desktopScale.currentIndex], trustFirst: trust.checked})) {
+                            editor.errorMessage = ""
+                            editor.close()
+                        } else {
+                            editor.errorMessage = manager.message
+                        }
                     }
                 }
             }

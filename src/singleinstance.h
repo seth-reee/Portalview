@@ -14,11 +14,9 @@ public:
     Result start(const QString &host = {}, const QString &name = {}) {
         auto bus = QDBusConnection::sessionBus();
         if (!bus.isConnected()) return Error;
-        if (bus.registerService("org.portalview.Application")) {
-            if (bus.registerObject("/Application", this, QDBusConnection::ExportAllSlots)) return Primary;
-            bus.unregisterService("org.portalview.Application");
-            return Error;
-        }
+        if (!bus.registerObject("/Application", this, QDBusConnection::ExportAllSlots)) return Error;
+        if (bus.registerService("org.portalview.Application")) return Primary;
+        bus.unregisterObject("/Application");
         QDBusInterface existing("org.portalview.Application", "/Application",
                                 "org.portalview.Application", bus);
         if (!host.isEmpty()) {
@@ -30,7 +28,7 @@ public:
     }
 public slots:
     bool addConnection(const QString &host, const QString &name) {
-        if (!QRegularExpression("^[A-Za-z0-9_.:-]+$").match(host).hasMatch()
+        if (!QRegularExpression("^(\\[[0-9A-Fa-f]*:[0-9A-Fa-f:]+\\]|[A-Za-z0-9_.:-]+)$").match(host).hasMatch()
             || name.contains('\n') || name.contains('\r') || name.contains(QChar(0))) return false;
         emit addConnectionRequested(host, name);
         return true;

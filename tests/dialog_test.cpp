@@ -6,6 +6,7 @@
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QUuid>
+#include <QDir>
 #include "manager.h"
 #include "theme.h"
 #include "tray.h"
@@ -125,13 +126,51 @@ private slots:
         QCOMPARE(scale->property("currentIndex").toInt(), 0);
         entry["desktopScale"] = 200;
         entry["captureShortcuts"] = true;
+        entry["multimon"] = true;
+        entry["audioMode"] = "local";
+        entry["microphone"] = true;
+        entry["sharedFolder"] = QDir::tempPath();
         QVERIFY(manager.save(entry));
+        auto multimon = window->findChild<QObject*>("multimonCheckBox");
+        auto audioMode = window->findChild<QObject*>("audioModeSelector");
+        auto microphone = window->findChild<QObject*>("microphoneToggle");
+        auto sharedFolder = window->findChild<QObject*>("sharedFolderField");
+        QVERIFY(multimon && audioMode && microphone && sharedFolder);
         QVERIFY(QMetaObject::invokeMethod(window, "edit", Q_ARG(QVariant, QVariant(entry))));
         QVERIFY(capture->property("checked").toBool());
         QCOMPARE(scale->property("currentIndex").toInt(), 5);
+        QVERIFY(multimon->property("checked").toBool());
+        QCOMPARE(audioMode->property("currentIndex").toInt(), 1);
+        QVERIFY(microphone->property("checked").toBool());
+        QCOMPARE(sharedFolder->property("text").toString(), QDir::cleanPath(QDir::tempPath()));
         QVERIFY(QMetaObject::invokeMethod(window, "edit", Q_ARG(QVariant, QVariant())));
         QVERIFY(!capture->property("checked").toBool());
         QCOMPARE(scale->property("currentIndex").toInt(), 0);
+        QVERIFY(!multimon->property("checked").toBool());
+        QCOMPARE(audioMode->property("currentIndex").toInt(), 0);
+        QVERIFY(!microphone->property("checked").toBool());
+        QCOMPARE(sharedFolder->property("text").toString(), QString());
+        auto editorError = window->findChild<QObject*>("editorErrorLabel");
+        QVERIFY(editorError);
+        QVERIFY(!manager.message().isEmpty());
+        QCOMPARE(editorError->property("text").toString(), QString());
+        QVERIFY(QMetaObject::invokeMethod(editor, "close"));
+        // Importing a username-less .rdp opens the prefilled editor for review.
+        emit manager.importNeedsReview(QVariantMap{
+            {"name", "ImportedHost"},
+            {"host", "10.20.30.40"},
+            {"port", 3390},
+            {"multimon", true},
+            {"audioMode", "remote"},
+            {"microphone", true}
+        });
+        QTRY_VERIFY(editor->property("visible").toBool());
+        QCOMPARE(editor->property("entryId").toString(), QString());
+        QCOMPARE(window->findChild<QObject*>("nameField")->property("text").toString(), QString("ImportedHost"));
+        QCOMPARE(window->findChild<QObject*>("hostField")->property("text").toString(), QString("10.20.30.40"));
+        QVERIFY(multimon->property("checked").toBool());
+        QCOMPARE(audioMode->property("currentIndex").toInt(), 2);
+        QVERIFY(microphone->property("checked").toBool());
         QVERIFY(QMetaObject::invokeMethod(editor, "close"));
         QVERIFY(QMetaObject::invokeMethod(contextMenu, "close"));
         const auto savedCount = manager.connections().size();

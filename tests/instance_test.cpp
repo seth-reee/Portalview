@@ -43,8 +43,14 @@ private slots:
         QVERIFY(request.waitForFinished()); QCOMPARE(request.exitCode(), 0);
         QTRY_VERIFY(primary.bytesAvailable() > 0);
         QCOMPARE(primary.readAllStandardOutput(), QByteArray("add:192.168.1.42:Office PC\n"));
+        QProcess ipv6; launch(ipv6, {"--request", "[::1]", "Local IPv6"});
+        QVERIFY(ipv6.waitForFinished()); QCOMPARE(ipv6.exitCode(), 0);
+        QTRY_VERIFY(primary.bytesAvailable() > 0);
+        QCOMPARE(primary.readAllStandardOutput(), QByteArray("add:[::1]:Local IPv6\n"));
         QProcess invalid; launch(invalid, {"--request", "bad host", "Office PC"});
         QVERIFY(invalid.waitForFinished()); QCOMPARE(invalid.exitCode(), 1);
+        QProcess malformedBracket; launch(malformedBracket, {"--request", "[::1", "Bad IPv6"});
+        QVERIFY(malformedBracket.waitForFinished()); QCOMPARE(malformedBracket.exitCode(), 1);
         QCOMPARE(primary.state(), QProcess::Running);
         primary.kill(); QVERIFY(primary.waitForFinished());
     }

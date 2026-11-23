@@ -4,10 +4,11 @@ Portalview helps you organize and connect to remote desktops from [Omarchy](http
 
 ## What it does
 
-- Save, search, edit, and delete RDP connections.
+- Save, search, edit, import, and delete RDP connections.
 - Organize connections into groups and filter the list by group.
 - Double click an entry to connect, or right click to edit it.
 - Prompt for passwords each session without saving them or exposing them in process arguments.
+- Configure audio redirection, microphone forwarding, multi-monitor fullscreen, and local folder sharing per connection.
 - Enable Performance mode for modem settings, reduced color depth, and fewer desktop effects.
 - Keep sessions running with an optional system tray icon.
 - Follow the current Omarchy theme, including live theme changes.
@@ -17,17 +18,15 @@ Portalview helps you organize and connect to remote desktops from [Omarchy](http
 Download the package matching your architecture from [Releases](https://github.com/seth-reee/Portalview/releases): `x86_64` for standard Omarchy PCs or `aarch64` for ARM64.
 
 ```bash
-sudo pacman -U ./portalview-0.1.2-1-x86_64.pkg.tar.zst
+sudo pacman -U ./portalview-0.1.5-1-x86_64.pkg.tar.zst
 ```
 
-For ARM64, use the `aarch64` filename instead. Pacman installs required dependencies, including `freerdp`; The standard package does not bundle FreeRDP; a private runtime can be installed as described below. Install `qt6-wayland` for native Wayland support if it is not already installed.
+For ARM64, use the `aarch64` filename instead. Pacman installs required dependencies, including `freerdp`; the standard package does not bundle FreeRDP (a private runtime can be installed as described below). Install `qt6-wayland` for native Wayland support if it is not already installed.
 
 Both packages passed automated connection and UI tests and offscreen startup checks. **ARM64 status:** validation used Docker/QEMU; a real ARM64 Omarchy desktop and live RDP connection remain untested.
 
 Open **Portalview** from the application menu or run `portalview`.
-Launching it again opens the existing window, including when it is hidden in the tray. Only one instance can use a connection store at a time, preventing saved connections from being overwritten by another instance.
-
-Only one Portalview instance runs per desktop session. Launching it again brings the existing window back, including when hidden in the tray. A working D-Bus session bus is required.
+Only one Portalview instance runs per desktop session and per connection store, preventing saved connections from being overwritten. Launching it again brings the existing window back, including when hidden in the tray. A working D-Bus session bus is required.
 
 ## Use
 
@@ -42,6 +41,14 @@ When using the system SDL client, Portalview disables SDL FreeRDP's Right Shift 
 **Performance mode** requests modem network settings and 16-bit color, and disables wallpaper, themes, font smoothing, desktop composition, full window dragging, and menu animations. Save and reconnect to apply it. The remote server may override visual settings or negotiated color depth.
 
 **Capture desktop shortcuts** is off by default, including for previously saved connections. Desktop shortcuts such as Super+T stay local, while Ctrl+C/Ctrl+V and shortcuts your desktop does not intercept still reach the remote app. Enable it to let the remote session capture desktop shortcuts. Save and reconnect to apply it. **Share clipboard** separately controls copying content between your local and remote desktops.
+
+**Shared folder** lets you share a local directory as a network drive inside the remote session (`/drive:<name>,<path>`). Choose **Browse…** or enter an absolute directory path without commas.
+
+**Use all monitors (fullscreen)** spans the remote session across all attached displays (`/multimon`).
+
+**Audio redirection** controls whether remote sound plays on your local machine (`/sound /audio-mode:0`), stays on the remote host (`/audio-mode:1`), or is muted (`/audio-mode:2`). **Redirect microphone** forwards your local microphone (`/microphone`).
+
+Choose **Import…** to import standard `.rdp` files (UTF-8 or UTF-16) or Portalview JSON backups. `.rdp` files without a saved username open in the connection editor with parsed settings prefilled so you can add a username and save. Passwords in `.rdp` files are never imported.
 
 Enable **System Tray Icon** to keep Portalview running when its main window closes. Right click the tray icon for **Open Main Menu**, connections grouped by name, and **Close** to quit and disconnect sessions. The tray setting persists across launches. Without an available tray, closing the window exits normally.
 
@@ -68,7 +75,7 @@ For a manual installation:
 cmake --install build --prefix "$HOME/.local"
 ```
 
-Theme colors load from `$XDG_STATE_HOME/omarchy/current/theme/colors.toml` (default `~/.local/state`) and refresh within two seconds. A fallback palette supports other desktops. Gateway connections, a credential vault, file sharing, and connection import are not implemented yet.
+Theme colors load from `$XDG_STATE_HOME/omarchy/current/theme/colors.toml` (default `~/.local/state`) and refresh within two seconds. A fallback palette supports other desktops. Gateway connections and a credential vault are not implemented yet.
 
 ## License
 
@@ -78,7 +85,7 @@ Portalview is made by [seth-reee](https://github.com/seth-reee) and is available
 
 Every push to `master` prepares the next patch version, builds native x86_64 and ARM64 Arch packages, and publishes a GitHub release after both architecture jobs pass. The workflow updates the version and pinned source checksum, tags the tested commit, and verifies uploaded asset checksums before publishing. No extra secret is required. An explicitly increased, untagged version in CMake and PKGBUILD is respected.
 
-Pull requests build development packages without publishing. Manual runs on `master` also release; matching version tags build and publish that version. Package and source artifacts are available from the **Arch Linux packages** workflow. Published releases are verified on retries and never replaced.
+Pull requests build development packages without publishing. Manual runs on `master` also release; matching version tags build and publish that version. Package and source artifacts are available from the **Linux packages** workflow. Published releases are verified on retries and never replaced.
 
 Existing tests run during packaging where available, followed by packaged executable startup checks with an isolated D-Bus session. Both architectures verify package metadata and ELF architecture. CI does not establish real ARM desktop, Wayland, hardware GPU, or live network behavior.
 
